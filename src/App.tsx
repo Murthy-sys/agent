@@ -72,7 +72,7 @@ export default function App() {
 
   async function handleSend(text: string) {
     if (!apiKey) {
-      setSettingsOpen(true);
+      setError("VITE_OPENAI_API_KEY is not set. Add it to .env (local) or to Render's environment variables, then rebuild.");
       return;
     }
 
@@ -162,8 +162,6 @@ export default function App() {
         sending={sending}
         error={error}
         onSend={handleSend}
-        onOpenSettings={() => setSettingsOpen(true)}
-        hasApiKey={Boolean(apiKey)}
       />
       {settingsOpen && (
         <SettingsModal

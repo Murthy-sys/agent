@@ -8,8 +8,6 @@ interface Props {
   sending: boolean;
   error: string | null;
   onSend: (text: string) => void;
-  onOpenSettings: () => void;
-  hasApiKey: boolean;
 }
 
 export default function ChatView({
@@ -18,8 +16,6 @@ export default function ChatView({
   sending,
   error,
   onSend,
-  onOpenSettings,
-  hasApiKey,
 }: Props) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -71,9 +67,7 @@ export default function ChatView({
               How can I help?
             </div>
             <div className="text-sm">
-              {hasApiKey
-                ? "Type a message below to start chatting."
-                : "Open Settings to add your OpenAI API key, then start chatting."}
+              Type a message below to start chatting.
             </div>
           </div>
         ) : (
@@ -109,31 +103,18 @@ export default function ChatView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={
-              hasApiKey
-                ? "Message the assistant…  (Enter to send, Shift+Enter for newline)"
-                : "Add your API key in Settings to start"
-            }
+            placeholder="Message the assistant…  (Enter to send, Shift+Enter for newline)"
             rows={1}
             className="flex-1 resize-none rounded-xl border border-white/10 bg-neutral-800 px-4 py-3 text-sm text-neutral-100 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
-            disabled={!hasApiKey || sending}
+            disabled={sending}
           />
-          {hasApiKey ? (
-            <button
-              onClick={submit}
-              disabled={!input.trim() || sending}
-              className="h-11 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-600/40"
-            >
-              Send
-            </button>
-          ) : (
-            <button
-              onClick={onOpenSettings}
-              className="h-11 rounded-xl border border-white/15 px-4 text-sm font-medium text-neutral-200 hover:bg-white/5"
-            >
-              Add API key
-            </button>
-          )}
+          <button
+            onClick={submit}
+            disabled={!input.trim() || sending}
+            className="h-11 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-600/40"
+          >
+            Send
+          </button>
         </div>
       </div>
     </section>
