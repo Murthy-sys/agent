@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
@@ -36,10 +36,6 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  useEffect(() => {
-    if (!apiKey) setSettingsOpen(true);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
