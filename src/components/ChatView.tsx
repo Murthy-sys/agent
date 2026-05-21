@@ -72,10 +72,12 @@ export default function ChatView({
           </div>
         ) : (
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))}
-            {sending && (
+            {messages
+              .filter((m) => m.content || m.role !== "assistant")
+              .map((m) => (
+                <MessageBubble key={m.id} message={m} />
+              ))}
+            {sending && !messages[messages.length - 1]?.content && (
               <div className="flex w-full justify-start">
                 <div className="rounded-2xl border border-white/5 bg-neutral-800 px-4 py-3 text-sm text-neutral-400">
                   <span className="inline-flex gap-1">

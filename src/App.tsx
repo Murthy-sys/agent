@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
-import { sendChat } from "./lib/openai";
+import { streamChat } from "./lib/openai";
 import type { Conversation, Message } from "./types";
 
 const LS_MODEL = "agent.openai.model";
@@ -97,30 +97,64 @@ export default function App() {
 
     setSending(true);
     setError(null);
+
+    const assistantId = uid();
+    const history = [...(convo.messages ?? []), userMsg];
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convoId
+          ? {
+              ...c,
+              messages: [
+                ...c.messages,
+                {
+                  id: assistantId,
+                  role: "assistant",
+                  content: "",
+                  createdAt: Date.now(),
+                },
+              ],
+            }
+          : c
+      )
+    );
+
+    let acc = "";
     try {
-      const history = [...(convo.messages ?? []), userMsg];
-      const reply = await sendChat({
+      await streamChat({
         apiKey,
         model,
         messages: history,
         systemPrompt: systemPrompt || undefined,
+        onToken: (delta) => {
+          acc += delta;
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convoId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content: acc } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        },
       });
-      const assistantMsg: Message = {
-        id: uid(),
-        role: "assistant",
-        content: reply,
-        createdAt: Date.now(),
-      };
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === convoId
-            ? { ...c, messages: [...c.messages, assistantMsg] }
-            : c
-        )
-      );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convoId
+            ? {
+                ...c,
+                messages: c.messages.filter((m) => m.id !== assistantId),
+              }
+            : c
+        )
+      );
     } finally {
       setSending(false);
     }

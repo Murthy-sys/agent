@@ -1,20 +1,22 @@
 import type { Message } from "../types";
 
-export interface ChatRequest {
+export interface StreamChatRequest {
   apiKey: string;
   model: string;
   messages: Message[];
   systemPrompt?: string;
   signal?: AbortSignal;
+  onToken: (delta: string) => void;
 }
 
-export async function sendChat({
+export async function streamChat({
   apiKey,
   model,
   messages,
   systemPrompt,
   signal,
-}: ChatRequest): Promise<string> {
+  onToken,
+}: StreamChatRequest): Promise<void> {
   const payloadMessages = [
     ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
     ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -30,11 +32,12 @@ export async function sendChat({
       model,
       messages: payloadMessages,
       temperature: 0.7,
+      stream: true,
     }),
     signal,
   });
 
-  if (!res.ok) {
+  if (!res.ok || !res.body) {
     let detail = "";
     try {
       const err = await res.json();
@@ -45,10 +48,30 @@ export async function sendChat({
     throw new Error(`OpenAI ${res.status}: ${detail}`);
   }
 
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error("Unexpected response shape from OpenAI");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || !line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") return;
+      try {
+        const parsed = JSON.parse(data);
+        const delta: string | undefined = parsed?.choices?.[0]?.delta?.content;
+        if (delta) onToken(delta);
+      } catch {
+        // ignore malformed SSE chunks
+      }
+    }
   }
-  return content;
 }
