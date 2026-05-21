@@ -5,9 +5,10 @@ import SettingsModal from "./components/SettingsModal";
 import { sendChat } from "./lib/openai";
 import type { Conversation, Message } from "./types";
 
-const LS_API_KEY = "agent.openai.apiKey";
 const LS_MODEL = "agent.openai.model";
 const LS_SYSTEM = "agent.openai.systemPrompt";
+
+const apiKey: string = import.meta.env.VITE_OPENAI_API_KEY ?? "";
 
 const uid = () =>
   Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -18,12 +19,6 @@ function titleFromFirstMessage(text: string): string {
 }
 
 export default function App() {
-  const [apiKey, setApiKey] = useState<string>(
-    () =>
-      localStorage.getItem(LS_API_KEY) ??
-      import.meta.env.VITE_OPENAI_API_KEY ??
-      ""
-  );
   const [model, setModel] = useState<string>(
     () => localStorage.getItem(LS_MODEL) ?? "gpt-4o-mini"
   );
@@ -131,15 +126,9 @@ export default function App() {
     }
   }
 
-  function saveSettings(next: {
-    apiKey: string;
-    model: string;
-    systemPrompt: string;
-  }) {
-    setApiKey(next.apiKey);
+  function saveSettings(next: { model: string; systemPrompt: string }) {
     setModel(next.model);
     setSystemPrompt(next.systemPrompt);
-    localStorage.setItem(LS_API_KEY, next.apiKey);
     localStorage.setItem(LS_MODEL, next.model);
     localStorage.setItem(LS_SYSTEM, next.systemPrompt);
     setSettingsOpen(false);
@@ -165,7 +154,6 @@ export default function App() {
       />
       {settingsOpen && (
         <SettingsModal
-          apiKey={apiKey}
           model={model}
           systemPrompt={systemPrompt}
           onSave={saveSettings}
